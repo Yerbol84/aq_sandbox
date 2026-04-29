@@ -1,0 +1,16 @@
+name: aq_sandbox
+description: Sandbox implementation for AQ Platform
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  aq_schema:
+    path: ../aq_schema
+  path: ^1.9.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  lints: ^5.0.0
