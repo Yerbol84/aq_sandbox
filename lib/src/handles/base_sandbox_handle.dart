@@ -6,45 +6,61 @@ import 'package:aq_schema/tools.dart';
 abstract base class BaseSandboxHandle implements ISandboxHandle {
   @override
   final String sandboxId;
-  
+
   @override
   final SandboxRuntimeType sbRuntimeType;
-  
+
   @override
   SandboxStatus status = SandboxStatus.creating;
 
   BaseSandboxHandle(this.sandboxId, this.sbRuntimeType);
 
   @override
-  Future<RunContext> createContext({
+  Future<(RunContext, SandboxResources)> createContext({
     required List<ToolCapability> requestedCaps,
     required SandboxPolicy policy,
     required String runId,
   }) async {
     final grantedCaps = _negotiate(requestedCaps, policy);
-    
-    return RunContext(
-      runId: runId,
+
+    final fsCtx  = (grantedCaps.hasRead || grantedCaps.hasWrite) ? await createFsContext() : null;
+    final netCtx  = grantedCaps.hasNet  ? await createNetContext(policy)  : null;
+    final procCtx = grantedCaps.hasProc ? await createProcContext(policy) : null;
+
+    final resources = SandboxResources(
+      fsRead:  fsCtx,
+      fsWrite: grantedCaps.hasWrite ? fsCtx : null,
+      net:     netCtx,
+      proc:    procCtx,
+    );
+
+    final context = RunContext(
+      runId:     runId,
       sandboxId: sandboxId,
       sessionId: runId,
-      fs: grantedCaps.hasFs ? await createFsContext() : null,
-      net: grantedCaps.hasNet ? await createNetContext(policy) : null,
-      proc: grantedCaps.hasProc ? await createProcContext(policy) : null,
+      policy:    policy,
+      sandboxResources: resources,
     );
+
+    return (context, resources);
   }
 
+  /// S-01 fix: проверяем совместимость path patterns, не только типы.
   _GrantedCaps _negotiate(List<ToolCapability> requested, SandboxPolicy policy) {
-    final hasFs = requested.any((c) => c is FsReadCap || c is FsWriteCap) &&
-        policy.allowedCaps.any((c) => c is FsReadCap || c is FsWriteCap);
-    final hasNet = requested.any((c) => c is NetOutCap) &&
-        policy.allowedCaps.any((c) => c is NetOutCap);
-    final hasProc = requested.any((c) => c is ProcSpawnCap) &&
-        policy.allowedCaps.any((c) => c is ProcSpawnCap);
-    
-    return _GrantedCaps(hasFs, hasNet, hasProc);
+    const matcher = DefaultCapabilityMatcher();
+
+    bool isGranted(ToolCapability req) =>
+        policy.allowedCaps.any((g) => matcher.allows(req, g));
+
+    final hasRead  = requested.whereType<FsReadCap>().any(isGranted);
+    final hasWrite = requested.whereType<FsWriteCap>().any(isGranted);
+    final hasNet   = requested.whereType<NetOutCap>().any(isGranted);
+    final hasProc  = requested.whereType<ProcSpawnCap>().any(isGranted);
+
+    return _GrantedCaps(hasRead, hasWrite, hasNet, hasProc);
   }
 
-  Future<IFsContext?> createFsContext();
+  Future<IWritableFsContext?> createFsContext();
   Future<INetContext?> createNetContext(SandboxPolicy policy);
   Future<IProcContext?> createProcContext(SandboxPolicy policy);
 
@@ -56,8 +72,9 @@ abstract base class BaseSandboxHandle implements ISandboxHandle {
 }
 
 final class _GrantedCaps {
-  final bool hasFs;
+  final bool hasRead;
+  final bool hasWrite;
   final bool hasNet;
   final bool hasProc;
-  _GrantedCaps(this.hasFs, this.hasNet, this.hasProc);
+  _GrantedCaps(this.hasRead, this.hasWrite, this.hasNet, this.hasProc);
 }

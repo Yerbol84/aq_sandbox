@@ -9,7 +9,7 @@ final class InMemorySandboxHandle extends BaseSandboxHandle {
   InMemorySandboxHandle(String sandboxId) : super(sandboxId, SandboxRuntimeType.inMemory);
 
   @override
-  Future<IFsContext?> createFsContext() async => InMemoryFsContext();
+  Future<IWritableFsContext?> createFsContext() async => InMemoryFsContext();
 
   @override
   Future<INetContext?> createNetContext(SandboxPolicy policy) async {

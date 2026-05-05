@@ -18,7 +18,7 @@ final class LocalFsSandboxHandle extends BaseSandboxHandle {
       : super(sandboxId, SandboxRuntimeType.localFs);
 
   @override
-  Future<IFsContext?> createFsContext() async => LocalFsContext(workDir);
+  Future<IWritableFsContext?> createFsContext() async => LocalFsContext(workDir);
 
   @override
   Future<INetContext?> createNetContext(SandboxPolicy policy) async {

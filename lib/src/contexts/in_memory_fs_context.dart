@@ -5,6 +5,13 @@ import 'package:aq_schema/sandbox.dart';
 
 final class InMemoryFsContext implements IFsContext {
   final Map<String, List<int>> _files = {};
+  bool _disposed = false;
+
+  @override
+  bool get isDisposed => _disposed;
+
+  @override
+  Future<void> dispose() async => _disposed = true;
 
   @override
   Future<String> read(String relativePath) async {

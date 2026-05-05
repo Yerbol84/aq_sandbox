@@ -6,8 +6,15 @@ import 'package:aq_schema/sandbox.dart';
 final class SimpleProcContext implements IProcContext {
   final Set<String> _allowedBinaries;
   final String _workDir;
+  bool _disposed = false;
 
   SimpleProcContext(this._allowedBinaries, this._workDir);
+
+  @override
+  bool get isDisposed => _disposed;
+
+  @override
+  Future<void> dispose() async => _disposed = true;
 
   @override
   Future<ProcResult> run(

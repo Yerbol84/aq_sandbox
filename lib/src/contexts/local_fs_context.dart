@@ -6,8 +6,15 @@ import 'package:path/path.dart' as p;
 
 final class LocalFsContext implements IFsContext {
   final String _workDir;
+  bool _disposed = false;
 
   LocalFsContext(this._workDir);
+
+  @override
+  bool get isDisposed => _disposed;
+
+  @override
+  Future<void> dispose() async => _disposed = true;
 
   String _resolve(String relativePath) {
     final resolved = p.normalize(p.join(_workDir, relativePath));
